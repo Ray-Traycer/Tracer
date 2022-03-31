@@ -1,0 +1,17 @@
+[package]
+name = "tracer"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+image="*"
+arrayvec ="*"
+enum_dispatch = "*"
+glam="0.18.0"
+rand="*"
+indicatif="0.16.2"
+rayon="*"
+bvh="*"
+trait_enum="*"
