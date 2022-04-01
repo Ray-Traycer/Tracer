@@ -1,18 +1,18 @@
-use super::world::{self, WorldObjects};
+use super::world::WorldObjects;
 use crate::{
+    materials::material::{Material, MaterialType},
     objects::object::Geometry,
-    utils::{bvh::BvhTree, material::Material, Color, BLACK},
+    utils::{bvh::BvhTree, Color, BLACK},
 };
 use glam::Vec3;
 
-#[derive(Copy, Clone)]
 pub struct Intersection {
     pub distance: f32,
     pub point: Vec3,
     pub normal: Vec3,
     pub outward_normal: Vec3,
     pub uv: (f32, f32),
-    pub material: Material,
+    pub material: MaterialType,
 }
 
 impl Intersection {
@@ -21,7 +21,7 @@ impl Intersection {
         point: Vec3,
         normal: Vec3,
         outward_normal: Vec3,
-        material: Material,
+        material: MaterialType,
         uv: (f32, f32),
     ) -> Self {
         Self {
@@ -49,7 +49,7 @@ impl Ray {
         self.origin + t * self.direction
     }
 
-    pub fn front_face_normal(&self, normal: Vec3) -> bool {
+    pub fn front_face(&self, normal: Vec3) -> bool {
         self.direction.dot(normal) < 0.0
     }
 
@@ -82,7 +82,7 @@ impl Ray {
         match self.linear_trace(&world_objects, 0.001, ::std::f32::MAX) {
             Some(intersection) => {
                 let material = &intersection.material;
-                let emitted = material.emitted(intersection.uv);
+                let emitted = material.emitted(intersection.uv, intersection.point);
                 return match material.scatter(self, &intersection) {
                     Some((attenuation, scattered)) => {
                         emitted
@@ -104,7 +104,7 @@ impl Ray {
         match world_objects.hit(self, 0.001, ::std::f32::MAX) {
             Some(intersection) => {
                 let material = &intersection.material;
-                let emitted = material.emitted(intersection.uv);
+                let emitted = material.emitted(intersection.uv, intersection.point);
                 return match material.scatter(self, &intersection) {
                     Some((attenuation, scattered)) => {
                         emitted

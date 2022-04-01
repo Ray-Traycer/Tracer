@@ -1,5 +1,6 @@
 use crate::{
-    utils::{aabb::Aabb, material::Material},
+    materials::material::MaterialType,
+    utils::aabb::Aabb,
     world::physics::{Intersection, Ray},
 };
 
@@ -9,14 +10,14 @@ use std::f32::consts::PI;
 use super::object::{Bounded, Geometry, ObjectType};
 
 pub struct Sphere {
-    pub material: Material,
+    pub material: MaterialType,
     pub center: Vec3,
     pub radius: f32,
     pub node_index: usize,
 }
 
 impl Sphere {
-    pub fn new(center: Vec3, radius: f32, material: Material) -> ObjectType {
+    pub fn new(center: Vec3, radius: f32, material: MaterialType) -> ObjectType {
         ObjectType::Sphere(Sphere {
             center,
             radius,

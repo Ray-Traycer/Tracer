@@ -1,11 +1,9 @@
-use glam::Vec3;
-
 use crate::{
     objects::object::ObjectType,
-    utils::{bvh::BvhTree, Color, RenderedImage},
+    utils::{Color, RenderedImage},
 };
 
-use super::camera::{self, Camera};
+use super::camera::Camera;
 
 pub type WorldObjects = Vec<ObjectType>;
 

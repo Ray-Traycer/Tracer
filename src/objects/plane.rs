@@ -1,5 +1,6 @@
 use crate::{
-    utils::{aabb::Aabb, material::Material},
+    materials::material::MaterialType,
+    utils::aabb::Aabb,
     world::physics::{Intersection, Ray},
 };
 
@@ -19,7 +20,7 @@ pub struct Plane {
     b0: f32,
     b1: f32,
     k: f32,
-    material: Material,
+    material: MaterialType,
 }
 
 impl Plane {
@@ -30,7 +31,7 @@ impl Plane {
         b0: f32,
         b1: f32,
         k: f32,
-        material: Material,
+        material: MaterialType,
     ) -> ObjectType {
         ObjectType::Plane(Plane {
             plane_type,

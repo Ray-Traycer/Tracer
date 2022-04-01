@@ -1,7 +1,7 @@
 use glam::Vec3;
 
 use crate::{
-    utils::{aabb::Aabb, material::Material},
+    utils::aabb::Aabb,
     world::physics::{Intersection, Ray},
 };
 

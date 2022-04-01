@@ -4,8 +4,6 @@ use image::{ImageBuffer, Rgb};
 pub mod aabb;
 pub mod bvh;
 
-pub mod material;
-
 pub type Color = glam::Vec3;
 pub type RenderedImage = ImageBuffer<image::Rgb<u8>, Vec<u8>>;
 pub const BLACK: glam::Vec3 = Color::ZERO;

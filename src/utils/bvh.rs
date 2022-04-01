@@ -50,20 +50,17 @@ impl<'a> BvhTree<'a> {
                 Some(left) => match hit_right {
                     Some(right) => {
                         if left.distance < right.distance {
-                            return hit_left;
+                            return Some(left);
                         } else {
-                            return hit_right;
+                            return Some(right);
                         }
                     }
-                    None => return hit_left,
+                    None => return Some(left),
                 },
                 None => {}
             }
 
-            match hit_right {
-                Some(_right) => return hit_right,
-                None => {}
-            }
+            return hit_right;
         }
 
         None
