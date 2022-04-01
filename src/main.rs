@@ -4,7 +4,7 @@ use materials::{
     lambertian::Lambertian,
     material::MaterialType,
     metal::Metal,
-    texture::{Image, SolidColor, TextureType},
+    texture::{CheckerBoard, Image, SolidColor, TextureType},
 };
 use objects::sphere::Sphere;
 use random::random_distribution;
@@ -43,7 +43,7 @@ fn main() {
     let texture1 = Image::new(load_image("earthmap.jpeg", Rotate::None));
     let texture1_ptr = texture1.ptr();
 
-    let texture2 = SolidColor::new(Color::new(1.0, 1.0, 1.0));
+    let texture2 = CheckerBoard::new(Color::new(1.0, 1.0, 1.0), Color::new(0.0, 0.0, 0.0), 8.0);
     let texture2_ptr = texture2.ptr();
 
     world.add(Sphere::new(
@@ -55,7 +55,7 @@ fn main() {
     world.add(Sphere::new(
         Vec3::new(0.0, -1000.0, 0.0),
         1000.0,
-        Metal::new(texture2_ptr, 0.01),
+        Metal::new(texture2_ptr, 0.9),
     ));
 
     let camera = Camera::new(

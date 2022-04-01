@@ -7,6 +7,7 @@ use super::TexturePtr;
 
 pub enum TextureType {
     SolidColor(SolidColor),
+    CheckerBoard(CheckerBoard),
     Image(Image),
 }
 
@@ -25,6 +26,7 @@ impl Texture for TextureType {
         match self {
             TextureType::SolidColor(tex) => tex.get_color_uv(uv, point),
             TextureType::Image(tex) => tex.get_color_uv(uv, point),
+            TextureType::CheckerBoard(tex) => tex.get_color_uv(uv, point),
         }
     }
 }
@@ -86,5 +88,34 @@ impl Texture for Image {
             pixel[1] as f32 / 255.0,
             pixel[2] as f32 / 255.0,
         )
+    }
+}
+
+pub struct CheckerBoard {
+    color_1: Color,
+    color_2: Color,
+    scale: f32,
+}
+
+impl CheckerBoard {
+    pub fn new(color_1: Color, color_2: Color, scale: f32) -> TextureType {
+        TextureType::CheckerBoard(CheckerBoard {
+            color_1,
+            color_2,
+            scale,
+        })
+    }
+}
+
+impl Texture for CheckerBoard {
+    fn get_color_uv(&self, _uv: (f32, f32), point: Vec3) -> Color {
+        let sin_v = (self.scale * point.x).sin()
+            * (self.scale * point.y).sin()
+            * (self.scale * point.z).sin();
+        if sin_v < 0.0 {
+            self.color_1
+        } else {
+            self.color_2
+        }
     }
 }
