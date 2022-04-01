@@ -1,15 +1,21 @@
 use std::time::Instant;
 
 use glam::Vec3;
-use image::{RgbImage, imageops::flip_vertical};
+use image::{imageops::flip_vertical, RgbImage};
 use indicatif::ProgressBar;
-use rayon::{slice::ParallelSliceMut, iter::{IndexedParallelIterator, ParallelIterator}};
+use rayon::{
+    iter::{IndexedParallelIterator, ParallelIterator},
+    slice::ParallelSliceMut,
+};
 
-use crate::{random::{random_in_unit_disk, random_distribution}, utils::{BLACK, Vec3Extension, RenderedImage}};
-use indicatif::ProgressStyle;
 use super::{physics::Ray, world::World};
+use crate::{
+    random::{random_distribution, random_in_unit_disk},
+    utils::{bvh::BvhTree, RenderedImage, Vec3Extension, BLACK},
+};
+use indicatif::ProgressStyle;
 
-pub struct Camera{
+pub struct Camera {
     origin: Vec3,
     lower_left_corner: Vec3,
     horizontal: Vec3,
@@ -18,11 +24,19 @@ pub struct Camera{
     v: Vec3,
     w: Vec3,
     lens_radius: f32,
-    aspect_ratio: f32
+    aspect_ratio: f32,
 }
 
 impl Camera {
-    pub fn new (lookfrom: Vec3, lookat: Vec3, vup: Vec3, vfov: f32, aspect_ratio: f32, aperture: f32, focus_dist: f32) -> Camera {
+    pub fn new(
+        lookfrom: Vec3,
+        lookat: Vec3,
+        vup: Vec3,
+        vfov: f32,
+        aspect_ratio: f32,
+        aperture: f32,
+        focus_dist: f32,
+    ) -> Camera {
         let theta = vfov.to_radians();
         let half_height = (theta / 2.0).tan();
         let half_width = aspect_ratio * half_height;
@@ -30,7 +44,8 @@ impl Camera {
         let u = vup.cross(w).normalize();
         let v = w.cross(u);
         let origin = lookfrom;
-        let lower_left_corner = origin - half_width * focus_dist * u - half_height * focus_dist * v - focus_dist * w;
+        let lower_left_corner =
+            origin - half_width * focus_dist * u - half_height * focus_dist * v - focus_dist * w;
         let horizontal = 2.0 * half_width * focus_dist * u;
         let vertical = 2.0 * half_height * focus_dist * v;
         Camera {
@@ -42,25 +57,20 @@ impl Camera {
             v,
             w,
             lens_radius: aperture / 2.0,
-            aspect_ratio
+            aspect_ratio,
         }
     }
 
-    fn get_ray(&self, u: f32, v: f32)-> Ray{
+    fn get_ray(&self, u: f32, v: f32) -> Ray {
         let rd = self.lens_radius * random_in_unit_disk();
         let offset = self.u * rd.x + self.v * rd.y;
         Ray::new(
             self.origin + offset,
-            self.lower_left_corner + u * self.horizontal + v * self.vertical - self.origin - offset
+            self.lower_left_corner + u * self.horizontal + v * self.vertical - self.origin - offset,
         )
     }
 
- 
-    
-    pub fn render(
-        &self,
-        world: &World
-    ) -> RenderedImage {
+    pub fn render(&self, world: &World) -> RenderedImage {
         let background = world.background;
         let width = world.width;
         let samples_per_pixel = world.samples_per_pixel;
@@ -93,7 +103,8 @@ impl Camera {
 
                     let r = self.get_ray(u, v);
 
-                    final_color = final_color + r.color(&world.objects, background, max_depth);
+                    final_color =
+                        final_color + r.linear_color(&world.objects, background, max_depth);
                 }
                 img.put_pixel(
                     x,
@@ -110,14 +121,12 @@ impl Camera {
         img
     }
 
-    pub fn render_threaded(
-        &self,
-        world: &World
-    ) -> RenderedImage {
+    pub fn render_threaded(&self, world: &mut World) -> RenderedImage {
         let background = world.background;
         let width = world.width;
         let samples_per_pixel = world.samples_per_pixel;
         let max_depth = world.max_depth;
+        let world_objects = BvhTree::new(&mut world.objects);
 
         let height = (width as f32 / self.aspect_ratio) as u32;
 
@@ -144,9 +153,13 @@ impl Camera {
 
                 let r = self.get_ray(u, v);
 
-                final_color = final_color + r.color(&world.objects, background, max_depth);
+                final_color = final_color + r.color(&world_objects, background, max_depth);
             });
-            slab.copy_from_slice(&(final_color / samples_per_pixel as f32).powf(0.5).to_slice_u8());
+            slab.copy_from_slice(
+                &(final_color / samples_per_pixel as f32)
+                    .powf(0.5)
+                    .to_slice_u8(),
+            );
 
             bar.inc(1);
         });
@@ -156,7 +169,5 @@ impl Camera {
         bar.finish();
         println!("Took {:?}", t1.elapsed());
         img
-
     }
-
 }

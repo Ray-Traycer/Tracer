@@ -17,7 +17,6 @@ pub fn random_distribution() -> f32 {
     // BETWEEN.sample(&mut rng)
 }
 
-
 pub fn random_sphere_distribution() -> Vec3 {
     loop {
         let p = Vec3::new(

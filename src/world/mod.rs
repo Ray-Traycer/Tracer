@@ -1,5 +1,3 @@
-pub mod object;
 pub mod camera;
-pub mod world;
 pub mod physics;
-
+pub mod world;

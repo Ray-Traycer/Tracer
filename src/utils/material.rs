@@ -1,19 +1,20 @@
 use glam::Vec3;
 
-use crate::{world::physics::{Intersection, Ray}, random::random_sphere_distribution};
+use crate::{
+    random::random_sphere_distribution,
+    world::physics::{Intersection, Ray},
+};
 
-use super::{BLACK, Color, Vec3Extension};
+use super::{Color, Vec3Extension, BLACK};
 
 #[derive(Clone, Copy)]
-pub struct Material{
-    color: Color
+pub struct Material {
+    color: Color,
 }
 
-impl Material{
-    pub fn new(color: Color) -> Self{
-        Self{
-            color
-        }
+impl Material {
+    pub fn new(color: Color) -> Self {
+        Self { color }
     }
 
     pub fn scatter(&self, _ray: &Ray, inter: &Intersection) -> Option<(Color, Ray)> {
@@ -26,10 +27,7 @@ impl Material{
             scatter_dir = normal;
         }
 
-        Some((
-            self.color,
-            Ray::new(inter.point, scatter_dir - inter.point),
-        ))
+        Some((self.color, Ray::new(inter.point, scatter_dir - inter.point)))
     }
 
     pub fn emitted(&self, _uv: (f32, f32)) -> Color {
