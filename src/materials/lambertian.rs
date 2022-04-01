@@ -25,13 +25,13 @@ impl Lambertian {
 
 impl Material for Lambertian {
     fn scatter(&self, _ray: &Ray, inter: &Intersection) -> Option<(Color, Ray)> {
-        let normal = inter.normal;
+        let texture = self.texture.deref();
+        let normal = texture.adjusted_normal(inter.uv, inter.normal);
         let mut scatter_dir = inter.point + normal + random_sphere_distribution().normalize();
 
         if scatter_dir.near_zero() {
             scatter_dir = normal;
         }
-        let texture = self.texture.deref();
 
         Some((
             texture.get_color_uv(inter.uv, inter.point),

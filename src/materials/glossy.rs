@@ -32,14 +32,16 @@ impl Glossy {
 
 impl Material for Glossy {
     fn scatter(&self, ray: &Ray, inter: &Intersection) -> Option<(Color, Ray)> {
-        let normal = inter.normal;
-        let mut scatter_dir = inter.point + normal + random_sphere_distribution().normalize();
+        let texture = self.texture.deref();
         let uv = inter.uv;
-        let unit_direction = ray.direction.normalize();
-        let color = self.texture.deref().get_color_uv(uv, inter.point);
+        let normal = texture.adjusted_normal(uv, inter.normal);
 
-        if random_distribution() > self.sheen {
-            let normal = inter.normal;
+        let mut scatter_dir = inter.point + normal + random_sphere_distribution().normalize();
+        let unit_direction = ray.direction.normalize();
+
+        let color = texture.get_color_uv(uv, inter.point);
+
+        if random_distribution() < self.sheen {
             let reflected = Metal::reflect(unit_direction, normal);
             Some((
                 color,

@@ -19,6 +19,7 @@ impl TextureType {
 
 pub trait Texture {
     fn get_color_uv(&self, uv: (f32, f32), point: Vec3) -> Color;
+    fn adjusted_normal(&self, uv: (f32, f32), normal: Vec3) -> Vec3;
 }
 
 impl Texture for TextureType {
@@ -29,21 +30,38 @@ impl Texture for TextureType {
             TextureType::CheckerBoard(tex) => tex.get_color_uv(uv, point),
         }
     }
+
+    fn adjusted_normal(&self, uv: (f32, f32), normal: Vec3) -> Vec3 {
+        match self {
+            TextureType::SolidColor(tex) => tex.adjusted_normal(uv, normal),
+            TextureType::CheckerBoard(_) => normal,
+            TextureType::Image(_) => normal,
+        }
+    }
 }
 
 pub struct SolidColor {
     color: Color,
+    bump_map: Option<BumpMap>,
 }
 
 impl SolidColor {
-    pub fn new(color: Color) -> TextureType {
-        TextureType::SolidColor(SolidColor { color })
+    pub fn new(color: Color, bump_map: Option<BumpMap>) -> TextureType {
+        TextureType::SolidColor(SolidColor { color, bump_map })
     }
 }
 
 impl Texture for SolidColor {
     fn get_color_uv(&self, _uv: (f32, f32), _point: Vec3) -> Color {
         self.color
+    }
+
+    fn adjusted_normal(&self, uv: (f32, f32), normal: Vec3) -> Vec3 {
+        if let Some(bp) = &self.bump_map {
+            return bp.adjusted_normal(uv, normal);
+        }
+
+        normal
     }
 }
 
@@ -70,17 +88,22 @@ pub fn clamp(value: f32, lower: f32, upper: f32) -> f32 {
     value.min(upper).max(lower)
 }
 
+pub fn clamp_uv(uv: (f32, f32), w: u32, h: u32) -> (u32, u32) {
+    let u = clamp(uv.0, 0.0, 1.0);
+    let v = 1.0 - clamp(uv.1, 0.0, 1.0);
+
+    let mut i = (u * w as f32) as u32;
+    let mut j = (v * h as f32) as u32;
+
+    i = if i >= w { w - 1 } else { i };
+    j = if j >= h { h - 1 } else { j };
+
+    (i, j)
+}
+
 impl Texture for Image {
     fn get_color_uv(&self, uv: (f32, f32), _point: Vec3) -> Color {
-        let u = clamp(uv.0, 0.0, 1.0);
-        let v = 1.0 - clamp(uv.1, 0.0, 1.0);
-
-        let mut i = (u * self.width as f32) as u32;
-        let mut j = (v * self.height as f32) as u32;
-
-        i = if i >= self.width { self.width - 1 } else { i };
-        j = if j >= self.height { self.height - 1 } else { j };
-
+        let (i, j) = clamp_uv(uv, self.width, self.height);
         let pixel = self.image.get_pixel(i, j);
 
         Color::new(
@@ -88,6 +111,10 @@ impl Texture for Image {
             pixel[1] as f32 / 255.0,
             pixel[2] as f32 / 255.0,
         )
+    }
+
+    fn adjusted_normal(&self, _uv: (f32, f32), normal: Vec3) -> Vec3 {
+        normal
     }
 }
 
@@ -117,5 +144,44 @@ impl Texture for CheckerBoard {
         } else {
             self.color_2
         }
+    }
+
+    fn adjusted_normal(&self, _uv: (f32, f32), normal: Vec3) -> Vec3 {
+        normal
+    }
+}
+
+pub struct BumpMap {
+    bp: Vec<Vec3>,
+    width: u32,
+    height: u32,
+}
+
+impl BumpMap {
+    pub fn from_image(image: DynamicImage) -> Option<Self> {
+        let bp: Vec<Vec3> = image
+            .pixels()
+            .map(|(_x, _y, pixel)| {
+                Vec3::new(
+                    pixel[0] as f32 / 255.0,
+                    pixel[1] as f32 / 255.0,
+                    pixel[2] as f32 / 255.0,
+                )
+            })
+            .collect();
+
+        Some(Self {
+            bp,
+            width: image.width(),
+            height: image.height(),
+        })
+    }
+
+    fn adjusted_normal(&self, uv: (f32, f32), normal: Vec3) -> Vec3 {
+        normal + self.get_normal(clamp_uv(uv, self.width, self.height))
+    }
+
+    fn get_normal(&self, pos: (u32, u32)) -> Vec3 {
+        self.bp[(pos.0 + self.width * pos.1) as usize]
     }
 }

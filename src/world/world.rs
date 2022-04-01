@@ -19,7 +19,7 @@ impl World {
     pub fn new() -> Self {
         World {
             objects: vec![],
-            background: Color::new(0.5, 0.5, 0.5),
+            background: Color::new(0.0, 0.00, 0.0),
             width: 800,
             samples_per_pixel: 128,
             max_depth: 50,

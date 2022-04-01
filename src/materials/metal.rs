@@ -30,13 +30,15 @@ impl Metal {
 
 impl Material for Metal {
     fn scatter(&self, ray: &Ray, inter: &Intersection) -> Option<(Color, Ray)> {
-        let normal = inter.normal;
+        let texture = self.texture.deref();
+        let normal = texture.adjusted_normal(inter.uv, inter.normal);
+
         let reflected = Metal::reflect(ray.direction.normalize(), normal);
         let uv = inter.uv;
 
         if reflected.dot(normal) > 0.0 {
             Some((
-                self.texture.deref().get_color_uv(uv, inter.point),
+                texture.get_color_uv(uv, inter.point),
                 Ray::new(
                     inter.point,
                     reflected + self.fuzz * random_sphere_distribution().normalize(),

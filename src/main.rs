@@ -1,10 +1,12 @@
 #![allow(dead_code)]
 use glam::Vec3;
 use materials::{
+    emissivediffuse::EmissiveDiffuse,
+    glossy::Glossy,
     lambertian::Lambertian,
     material::MaterialType,
     metal::Metal,
-    texture::{CheckerBoard, Image, SolidColor, TextureType},
+    texture::{self, BumpMap, CheckerBoard, Image, SolidColor, TextureType},
 };
 use objects::sphere::Sphere;
 use random::random_distribution;
@@ -43,19 +45,41 @@ fn main() {
     let texture1 = Image::new(load_image("earthmap.jpeg", Rotate::None));
     let texture1_ptr = texture1.ptr();
 
-    let texture2 = CheckerBoard::new(Color::new(1.0, 1.0, 1.0), Color::new(0.0, 0.0, 0.0), 8.0);
+    let texture2 = CheckerBoard::new(Color::new(1.0, 0.0, 0.2), Color::new(0.0, 0.0, 0.0), 8.0);
     let texture2_ptr = texture2.ptr();
+
+    let texture3 = SolidColor::new(
+        Color::new(1.0, 1.0, 1.0),
+        BumpMap::from_image(load_image("bumpmap.jpeg", Rotate::None)),
+    );
+
+    let texture3_ptr = texture3.ptr();
+
+    let texture4 = SolidColor::new(Color::new(2.0, 2.0, 2.0), None);
+    let texture4_ptr = texture4.ptr();
 
     world.add(Sphere::new(
         Vec3::new(0.0, 1.0, 0.0),
         1.0,
-        Lambertian::new(texture1_ptr),
+        Glossy::new(texture3_ptr, 0.5, 0.2),
+    ));
+
+    world.add(Sphere::new(
+        Vec3::new(0.2, 5.0, 3.0),
+        1.0,
+        EmissiveDiffuse::new(texture4_ptr),
+    ));
+
+    world.add(Sphere::new(
+        Vec3::new(5.2, 5.0, 3.0),
+        1.0,
+        EmissiveDiffuse::new(texture4_ptr),
     ));
 
     world.add(Sphere::new(
         Vec3::new(0.0, -1000.0, 0.0),
         1000.0,
-        Metal::new(texture2_ptr, 0.9),
+        Lambertian::new(texture2_ptr),
     ));
 
     let camera = Camera::new(
