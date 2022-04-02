@@ -1,8 +1,5 @@
 use crate::{
-    materials::{
-        material::{self, MaterialType},
-        texture,
-    },
+    materials::material::MaterialType,
     utils::aabb::Aabb,
     world::physics::{Intersection, Ray},
 };
@@ -63,8 +60,6 @@ impl Geometry for Sphere {
 
         let point = ray.at(root);
         let outward_normal = self.outward_normal(point);
-
-        // let texture = self.material.
 
         Some(Intersection::new(
             root,

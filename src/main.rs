@@ -1,14 +1,18 @@
 #![allow(dead_code)]
-use glam::Vec3;
+use glam::{vec3, Vec3};
 use materials::{
+    dielectric::Dielectric,
     emissivediffuse::EmissiveDiffuse,
     glossy::Glossy,
     lambertian::Lambertian,
     material::MaterialType,
     metal::Metal,
-    texture::{self, BumpMap, CheckerBoard, Image, SolidColor, TextureType},
+    texture::{CheckerBoard, Image, PixelMap, SolidColor, TextureType},
 };
-use objects::sphere::Sphere;
+use objects::{
+    plane::{Plane, PlaneType},
+    sphere::Sphere,
+};
 use random::random_distribution;
 use utils::{Color, WHITE};
 use world::{camera::Camera, world::World};
@@ -39,57 +43,114 @@ pub fn load_image(image_path: &str, rotation: Rotate) -> image::DynamicImage {
     }
 }
 
+fn color(r: f32, g: f32, b: f32) -> Color {
+    return Color::new(r, g, b);
+}
+
 fn main() {
     let mut world = World::new();
 
-    let texture1 = Image::new(load_image("earthmap.jpeg", Rotate::None));
-    let texture1_ptr = texture1.ptr();
-
-    let texture2 = CheckerBoard::new(Color::new(1.0, 0.0, 0.2), Color::new(0.0, 0.0, 0.0), 8.0);
-    let texture2_ptr = texture2.ptr();
-
-    let texture3 = SolidColor::new(
-        Color::new(1.0, 1.0, 1.0),
-        BumpMap::from_image(load_image("bumpmap.jpeg", Rotate::None)),
-    );
-
-    let texture3_ptr = texture3.ptr();
-
-    let texture4 = SolidColor::new(Color::new(2.0, 2.0, 2.0), None);
-    let texture4_ptr = texture4.ptr();
-
     world.add(Sphere::new(
-        Vec3::new(0.0, 1.0, 0.0),
-        1.0,
-        Glossy::new(texture3_ptr, 0.5, 0.2),
-    ));
-
-    world.add(Sphere::new(
-        Vec3::new(0.2, 5.0, 3.0),
-        1.0,
-        EmissiveDiffuse::new(texture4_ptr),
-    ));
-
-    world.add(Sphere::new(
-        Vec3::new(5.2, 5.0, 3.0),
-        1.0,
-        EmissiveDiffuse::new(texture4_ptr),
-    ));
-
-    world.add(Sphere::new(
-        Vec3::new(0.0, -1000.0, 0.0),
+        vec3(0.0, -1000.0, 0.0),
         1000.0,
-        Lambertian::new(texture2_ptr),
+        Lambertian::new(CheckerBoard::new(
+            color(0.7, 0.7, 0.7),
+            color(0.05, 0.05, 0.05),
+            5.0,
+        )),
     ));
+
+    world.add(Sphere::new(vec3(0.0, 1.0, 0.0), 1.0, Dielectric::new(1.5)));
+
+    let earth_texture = Image::new(load_image("earthmap.jpeg", Rotate::None), None);
+    world.add(Sphere::new(
+        vec3(-4.0, 1.0, 0.0),
+        1.0,
+        Lambertian::new(earth_texture.ptr()),
+    ));
+
+    world.add(Sphere::new(
+        vec3(4.0, 1.0, 0.0),
+        1.0,
+        Metal::new(
+            SolidColor::new(
+                color(0.7, 0.6, 0.5),
+                Some(PixelMap::from_image(load_image("bricks.jpeg", Rotate::R90))),
+            ),
+            0.0,
+        ),
+    ));
+
+    let robert_texture = Image::new(load_image("bobert.png", Rotate::None), None);
+    world.add(Plane::new(
+        PlaneType::ZX,
+        -10.0,
+        10.0,
+        -10.0,
+        10.0,
+        10.0,
+        EmissiveDiffuse::new(robert_texture.ptr()),
+    ));
+
+    for a in -11..11 {
+        for b in -11..11 {
+            let choose_mat = random_distribution();
+            let center = vec3(
+                a as f32 + 0.9 * random_distribution(),
+                0.2,
+                b as f32 + 0.9 * random_distribution(),
+            );
+
+            if (center - vec3(3.0, 0.2, 0.0)).length() > 0.9 {
+                let material;
+
+                if choose_mat < 0.75 {
+                    material = Lambertian::new(SolidColor::new(
+                        color(
+                            random_distribution(),
+                            random_distribution(),
+                            random_distribution(),
+                        ),
+                        None,
+                    ))
+                } else if choose_mat < 0.90 {
+                    material = Metal::new(
+                        SolidColor::new(
+                            color(
+                                random_distribution(),
+                                random_distribution(),
+                                random_distribution(),
+                            ),
+                            None,
+                        ),
+                        random_distribution(),
+                    )
+                } else if choose_mat < 0.95 {
+                    material = EmissiveDiffuse::new(SolidColor::new(
+                        color(
+                            random_distribution(),
+                            random_distribution(),
+                            random_distribution(),
+                        ),
+                        None,
+                    ))
+                } else {
+                    material = Dielectric::new(1.5);
+                }
+
+                world.add(Sphere::new(center, 0.2, material));
+            }
+        }
+    }
 
     let camera = Camera::new(
-        Vec3::new(0.0, 1.0, 5.0),
-        Vec3::new(0.0, 0.5, 0.0),
-        Vec3::new(0.0, 1.0, 0.0),
-        40.0,
+        vec3(13.0, 2.0, 3.0),
+        vec3(0.0, 0.0, 0.0),
+        vec3(0.0, 1.0, 0.0),
+        20.0,
         16.0 / 9.0,
-        0.0,
-        100.0,
+        0.1,
+        10.0,
     );
 
     let image = world.samples_per_pixel(128).max_depth(50).render(camera);

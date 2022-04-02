@@ -1,9 +1,12 @@
+use arrayvec::ArrayVec;
 use glam::Vec3;
 
 use crate::utils::Color;
 use image::{DynamicImage, GenericImageView};
 
 use super::TexturePtr;
+
+static mut TEXTURES: ArrayVec<TextureType, 1000> = ArrayVec::new_const();
 
 pub enum TextureType {
     SolidColor(SolidColor),
@@ -14,6 +17,17 @@ pub enum TextureType {
 impl TextureType {
     pub fn ptr(&self) -> TexturePtr {
         self as *const TextureType as usize
+    }
+
+    pub fn ref_ptr(self) -> TexturePtr {
+        if let TextureType::Image(_) = self {
+            panic!("Image Textures cannot use 'ref_ptr'!")
+        }
+
+        unsafe {
+            TEXTURES.push(self);
+            TEXTURES[TEXTURES.len() - 1].ptr()
+        }
     }
 }
 
@@ -34,20 +48,20 @@ impl Texture for TextureType {
     fn adjusted_normal(&self, uv: (f32, f32), normal: Vec3) -> Vec3 {
         match self {
             TextureType::SolidColor(tex) => tex.adjusted_normal(uv, normal),
+            TextureType::Image(tex) => tex.adjusted_normal(uv, normal),
             TextureType::CheckerBoard(_) => normal,
-            TextureType::Image(_) => normal,
         }
     }
 }
 
 pub struct SolidColor {
     color: Color,
-    bump_map: Option<BumpMap>,
+    bump_map: Option<PixelMap>,
 }
 
 impl SolidColor {
-    pub fn new(color: Color, bump_map: Option<BumpMap>) -> TextureType {
-        TextureType::SolidColor(SolidColor { color, bump_map })
+    pub fn new(color: Color, bump_map: Option<PixelMap>) -> TexturePtr {
+        TextureType::SolidColor(SolidColor { color, bump_map }).ref_ptr()
     }
 }
 
@@ -66,18 +80,20 @@ impl Texture for SolidColor {
 }
 
 pub struct Image {
-    image: DynamicImage,
+    image: PixelMap,
+    bump_map: Option<PixelMap>,
     width: u32,
     height: u32,
 }
 
 impl Image {
-    pub fn new(image: DynamicImage) -> TextureType {
+    pub fn new(image: DynamicImage, bump_map: Option<PixelMap>) -> TextureType {
         let width = image.width();
         let height = image.height();
 
         TextureType::Image(Image {
-            image,
+            image: PixelMap::from_image(image),
+            bump_map,
             width,
             height,
         })
@@ -103,17 +119,14 @@ pub fn clamp_uv(uv: (f32, f32), w: u32, h: u32) -> (u32, u32) {
 
 impl Texture for Image {
     fn get_color_uv(&self, uv: (f32, f32), _point: Vec3) -> Color {
-        let (i, j) = clamp_uv(uv, self.width, self.height);
-        let pixel = self.image.get_pixel(i, j);
-
-        Color::new(
-            pixel[0] as f32 / 255.0,
-            pixel[1] as f32 / 255.0,
-            pixel[2] as f32 / 255.0,
-        )
+        self.image.get_pixel(clamp_uv(uv, self.width, self.height))
     }
 
-    fn adjusted_normal(&self, _uv: (f32, f32), normal: Vec3) -> Vec3 {
+    fn adjusted_normal(&self, uv: (f32, f32), normal: Vec3) -> Vec3 {
+        if let Some(bp) = &self.bump_map {
+            return bp.adjusted_normal(uv, normal);
+        }
+
         normal
     }
 }
@@ -125,12 +138,13 @@ pub struct CheckerBoard {
 }
 
 impl CheckerBoard {
-    pub fn new(color_1: Color, color_2: Color, scale: f32) -> TextureType {
+    pub fn new(color_1: Color, color_2: Color, scale: f32) -> TexturePtr {
         TextureType::CheckerBoard(CheckerBoard {
             color_1,
             color_2,
             scale,
         })
+        .ref_ptr()
     }
 }
 
@@ -151,30 +165,28 @@ impl Texture for CheckerBoard {
     }
 }
 
-pub struct BumpMap {
-    bp: Vec<Vec3>,
+pub struct PixelMap {
+    pixels: Vec<Color>,
     width: u32,
     height: u32,
 }
 
-impl BumpMap {
-    pub fn from_image(image: DynamicImage) -> Option<Self> {
-        let bp: Vec<Vec3> = image
-            .pixels()
-            .map(|(_x, _y, pixel)| {
-                Vec3::new(
-                    pixel[0] as f32 / 255.0,
-                    pixel[1] as f32 / 255.0,
-                    pixel[2] as f32 / 255.0,
-                )
-            })
-            .collect();
-
-        Some(Self {
-            bp,
+impl PixelMap {
+    pub fn from_image(image: DynamicImage) -> Self {
+        Self {
+            pixels: image
+                .pixels()
+                .map(|(_x, _y, pixel)| {
+                    Vec3::new(
+                        pixel[0] as f32 / 255.0,
+                        pixel[1] as f32 / 255.0,
+                        pixel[2] as f32 / 255.0,
+                    )
+                })
+                .collect(),
             width: image.width(),
             height: image.height(),
-        })
+        }
     }
 
     fn adjusted_normal(&self, uv: (f32, f32), normal: Vec3) -> Vec3 {
@@ -182,6 +194,10 @@ impl BumpMap {
     }
 
     fn get_normal(&self, pos: (u32, u32)) -> Vec3 {
-        self.bp[(pos.0 + self.width * pos.1) as usize]
+        self.pixels[(pos.0 + self.width * pos.1) as usize]
+    }
+
+    fn get_pixel(&self, pos: (u32, u32)) -> Color {
+        self.pixels[(pos.0 + self.width * pos.1) as usize]
     }
 }
