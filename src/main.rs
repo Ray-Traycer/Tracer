@@ -62,7 +62,7 @@ fn main() {
 
     world.add(Sphere::new(vec3(0.0, 1.0, 0.0), 1.0, Dielectric::new(1.5)));
 
-    let earth_texture = Image::new(load_image("earthmap.jpeg", Rotate::None), None);
+    let earth_texture = Image::new(load_image("images/earthmap.jpeg", Rotate::None), None);
     world.add(Sphere::new(
         vec3(-4.0, 1.0, 0.0),
         1.0,
@@ -75,22 +75,12 @@ fn main() {
         Metal::new(
             SolidColor::new(
                 color(0.7, 0.6, 0.5),
-                Some(PixelMap::from_image(load_image("bricks.jpeg", Rotate::R90))),
+                Some(PixelMap::from_image(load_image("images/bricks.jpeg", Rotate::R90))),
             ),
             0.0,
         ),
     ));
 
-    let robert_texture = Image::new(load_image("bobert.png", Rotate::None), None);
-    world.add(Plane::new(
-        PlaneType::ZX,
-        -10.0,
-        10.0,
-        -10.0,
-        10.0,
-        10.0,
-        EmissiveDiffuse::new(robert_texture.ptr()),
-    ));
 
     for a in -11..11 {
         for b in -11..11 {
