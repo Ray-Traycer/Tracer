@@ -8,6 +8,7 @@ use crate::{
 };
 
 pub mod camera;
+pub mod hdri;
 pub mod physics;
 pub mod world;
 

@@ -204,12 +204,6 @@ impl PixelMap {
         }
     }
 
-    fn surface_uv(&self, point: Vec3) -> (f32, f32) {
-        let phi = (-point.z).atan2(point.x) + PI;
-        let theta = (-point.y).acos();
-        (phi / (2.0 * PI), theta / PI)
-    }
-
     fn adjusted_normal(&self, uv: (f32, f32), normal: Vec3) -> Vec3 {
         normal + self.get_normal(clamp_uv(uv, self.width, self.height))
     }
@@ -224,9 +218,5 @@ impl PixelMap {
 
     pub fn get_pixel_uv(&self, uv: (f32, f32)) -> Color {
         self.get_pixel(clamp_uv(uv, self.width, self.height))
-    }
-
-    pub fn dir_color(&self, dir: Vec3) -> Color {
-        self.get_pixel_uv(self.surface_uv(dir.normalize()))
     }
 }

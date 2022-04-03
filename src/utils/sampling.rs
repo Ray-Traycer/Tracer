@@ -3,7 +3,7 @@ use arrayvec::ArrayVec;
 use glam::Vec3;
 use rand::Rng;
 
-use crate::world::WorldLights;
+use crate::world::{hdri::HDRI, WorldLights};
 
 pub type ONB = ArrayVec<Vec3, 3>;
 
@@ -66,6 +66,9 @@ pub enum PDF<'a> {
         origin: Vec3,
         objects: &'a WorldLights,
     },
+    HDRI {
+        hdri: &'a HDRI,
+    },
     Mixture {
         p: &'a PDF<'a>,
         q: &'a PDF<'a>,
@@ -90,6 +93,11 @@ impl<'a> PDF<'a> {
         PDF::Mixture { p, q }
     }
 
+    #[inline(always)]
+    pub fn hdri(hdri: &'a HDRI) -> Self {
+        PDF::HDRI { hdri }
+    }
+
     pub fn value(&self, direction: Vec3) -> f32 {
         match self {
             PDF::Cosine { uvw } => {
@@ -102,6 +110,7 @@ impl<'a> PDF<'a> {
             }
             PDF::Lights { origin, objects } => objects.pdf_value(*origin, direction),
             PDF::Mixture { p, q } => 0.5 * p.value(direction) + 0.5 * q.value(direction),
+            PDF::HDRI { hdri } => hdri.value(direction),
         }
     }
 
@@ -117,6 +126,7 @@ impl<'a> PDF<'a> {
                     q.generate()
                 }
             }
+            PDF::HDRI { hdri } => hdri.generate(),
         }
     }
 }
