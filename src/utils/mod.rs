@@ -3,6 +3,7 @@ use image::{ImageBuffer, Rgb};
 
 pub mod aabb;
 pub mod bvh;
+pub mod sampling;
 
 pub type Color = glam::Vec3;
 pub type RenderedImage = ImageBuffer<image::Rgb<u8>, Vec<u8>>;

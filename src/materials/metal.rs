@@ -2,12 +2,12 @@ use glam::Vec3;
 
 use crate::{
     random::random_sphere_distribution,
-    utils::{Color, BLACK},
+    utils::Color,
     world::physics::{Intersection, Ray},
 };
 
 use super::{
-    material::{Material, MaterialType},
+    material::{Material, MaterialType, ScatterType},
     texture::Texture,
     PtrExtension, TexturePtr,
 };
@@ -29,7 +29,7 @@ impl Metal {
 }
 
 impl Material for Metal {
-    fn scatter(&self, ray: &Ray, inter: &Intersection) -> Option<(Color, Ray)> {
+    fn scatter(&self, ray: &Ray, inter: &Intersection) -> Option<ScatterType> {
         let texture = self.texture.deref();
         let normal = texture.adjusted_normal(inter.uv, inter.normal);
 
@@ -37,20 +37,16 @@ impl Material for Metal {
         let uv = inter.uv;
 
         if reflected.dot(normal) > 0.0 {
-            Some((
-                texture.get_color_uv(uv, inter.point),
-                Ray::new(
+            Some(ScatterType::Specular {
+                specular: Ray::new(
                     inter.point,
                     reflected + self.fuzz * random_sphere_distribution().normalize(),
                 ),
-            ))
+                attenuation: texture.get_color_uv(uv, inter.point),
+            })
         } else {
             None
         }
-    }
-
-    fn emitted(&self, _uv: (f32, f32), _point: Vec3) -> Color {
-        BLACK
     }
 
     fn albedo(&self, uv: (f32, f32), point: Vec3) -> Color {

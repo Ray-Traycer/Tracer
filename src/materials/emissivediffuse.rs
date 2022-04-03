@@ -1,8 +1,6 @@
-use crate::world::physics::Ray;
-
 use glam::Vec3;
 
-use crate::{utils::Color, world::physics::Intersection};
+use crate::utils::Color;
 
 use super::{
     material::{Material, MaterialType},
@@ -23,10 +21,6 @@ impl EmissiveDiffuse {
 }
 
 impl Material for EmissiveDiffuse {
-    fn scatter(&self, _ray: &Ray, _inter: &Intersection) -> Option<(Color, Ray)> {
-        None
-    }
-
     fn emitted(&self, uv: (f32, f32), point: Vec3) -> Color {
         self.texture.deref().get_color_uv(uv, point)
     }

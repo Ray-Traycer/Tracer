@@ -2,12 +2,12 @@ use glam::Vec3;
 
 use crate::{
     random::random_distribution,
-    utils::{Color, BLACK, WHITE},
+    utils::WHITE,
     world::physics::{Intersection, Ray},
 };
 
 use super::{
-    material::{Material, MaterialType},
+    material::{Material, MaterialType, ScatterType},
     metal::Metal,
 };
 
@@ -39,7 +39,7 @@ impl Dielectric {
 }
 
 impl Material for Dielectric {
-    fn scatter(&self, ray: &Ray, inter: &Intersection) -> Option<(Color, Ray)> {
+    fn scatter(&self, ray: &Ray, inter: &Intersection) -> Option<ScatterType> {
         let outward_norm = inter.outward_normal;
         let normal;
 
@@ -66,14 +66,10 @@ impl Material for Dielectric {
         } else {
             Dielectric::refract(unit_direction, normal, refraction_r)
         };
-        Some((attenuation, Ray::new(inter.point, direction)))
-    }
 
-    fn emitted(&self, _uv: (f32, f32), _point: Vec3) -> Color {
-        BLACK
-    }
-
-    fn albedo(&self, _uv: (f32, f32), _point: Vec3) -> Color {
-        BLACK
+        Some(ScatterType::Specular {
+            specular: Ray::new(inter.point, direction),
+            attenuation,
+        })
     }
 }

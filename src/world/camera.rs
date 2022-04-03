@@ -70,63 +70,12 @@ impl Camera {
         )
     }
 
-    pub fn render(&self, world: &World) -> RenderedImage {
-        let background = world.background;
-        let width = world.width;
-        let samples_per_pixel = world.samples_per_pixel;
-        let max_depth = world.max_depth;
-
-        let height = (width as f32 / self.aspect_ratio) as u32;
-
-        let mut img = RgbImage::new(width, height);
-
-        let bar = ProgressBar::new((width * height) as u64);
-
-        bar.set_style(
-            ProgressStyle::default_bar()
-                .template("[{elapsed_precise}] {bar:50.cyan/blue} {pos:>7}/{len:7} pixels"),
-        );
-
-        println!(
-            "Rendering {}x{} at {} samples per pixel with a max depth of {}",
-            width, height, samples_per_pixel, max_depth
-        );
-        let t1 = Instant::now();
-
-        for y in 0..height {
-            for x in 0..width {
-                let mut final_color = BLACK;
-
-                for _ in 0..samples_per_pixel {
-                    let u = (random_distribution() + x as f32) / (width - 1) as f32;
-                    let v = (random_distribution() + y as f32) / (height - 1) as f32;
-
-                    let r = self.get_ray(u, v);
-
-                    final_color =
-                        final_color + r.linear_color(&world.objects, background, max_depth);
-                }
-                img.put_pixel(
-                    x,
-                    height - 1 - y,
-                    (final_color / samples_per_pixel as f32).powf(0.5).to_rgb(),
-                );
-
-                bar.inc(1);
-            }
-        }
-
-        bar.finish();
-        println!("Took {:?}", t1.elapsed());
-        img
-    }
-
     pub fn render_threaded(&self, world: &mut World) -> RenderedImage {
-        // let background = world.background;
         let width = world.width;
         let samples_per_pixel = world.samples_per_pixel;
         let max_depth = world.max_depth;
         let world_objects = BvhTree::new(&mut world.objects);
+        let light_objects = &world.lights;
 
         let height = (width as f32 / self.aspect_ratio) as u32;
 
@@ -153,7 +102,10 @@ impl Camera {
 
                 let r = self.get_ray(u, v);
 
-                final_color = final_color + r.color(&world_objects, &world.skybox, max_depth);
+                final_color = final_color
+                    + r.color(&world_objects, &light_objects, &world.skybox, max_depth)
+                        .max(Vec3::ZERO)
+                        .min(Vec3::ONE);
             });
             slab.copy_from_slice(
                 &(final_color / samples_per_pixel as f32)

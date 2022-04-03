@@ -34,7 +34,7 @@ pub enum Rotate {
 use image::{io::Reader as ImageReader, DynamicImage};
 
 #[allow(dead_code)]
-pub fn load_image(image_path: &str, rotation: Rotate) -> image::DynamicImage {
+pub fn load_image(image_path: &str, rotation: Rotate) -> DynamicImage {
     let img = ImageReader::open(image_path).unwrap().decode().unwrap();
     match rotation {
         Rotate::R90 => img.rotate90(),
@@ -73,6 +73,12 @@ fn main() {
         Lambertian::new(earth_texture.ptr()),
     ));
 
+    world.add_light(Sphere::new(
+        vec3(0.0, 4.0, 1.0),
+        1.0,
+        EmissiveDiffuse::new(SolidColor::new(color(1.0, 1.0, 1.0), None)),
+    ));
+
     world.add(Sphere::new(
         vec3(4.0, 1.0, 0.0),
         1.0,
@@ -109,7 +115,8 @@ fn main() {
     //                         random_distribution(),
     //                     ),
     //                     None,
-    //                 ))
+    //                 ));
+    //                 world.add(Sphere::new(center, 0.2, material));
     //             } else if choose_mat < 0.90 {
     //                 material = Metal::new(
     //                     SolidColor::new(
@@ -121,7 +128,8 @@ fn main() {
     //                         None,
     //                     ),
     //                     random_distribution(),
-    //                 )
+    //                 );
+    //                 world.add(Sphere::new(center, 0.2, material));
     //             } else if choose_mat < 0.95 {
     //                 material = EmissiveDiffuse::new(SolidColor::new(
     //                     color(
@@ -130,12 +138,12 @@ fn main() {
     //                         random_distribution(),
     //                     ),
     //                     None,
-    //                 ))
+    //                 ));
+    //                 world.add_light(Sphere::new(center, 0.2, material));
     //             } else {
     //                 material = Dielectric::new(1.5);
+    //                 world.add(Sphere::new(center, 0.2, material));
     //             }
-
-    //             world.add(Sphere::new(center, 0.2, material));
     //         }
     //     }
     // }
@@ -150,6 +158,6 @@ fn main() {
         100.0,
     );
 
-    let image = world.samples_per_pixel(256).max_depth(50).render(camera);
+    let image = world.samples_per_pixel(1024).max_depth(50).render(camera);
     image.save("test.png").unwrap();
 }

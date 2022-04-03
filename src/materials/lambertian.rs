@@ -1,13 +1,12 @@
 use glam::Vec3;
 
 use crate::{
-    random::random_sphere_distribution,
-    utils::{Color, Vec3Extension, BLACK},
+    utils::{sampling::PDF, Color},
     world::physics::{Intersection, Ray},
 };
 
 use super::{
-    material::{Material, MaterialType},
+    material::{Material, MaterialType, ScatterType},
     texture::Texture,
     PtrExtension, TexturePtr,
 };
@@ -24,26 +23,21 @@ impl Lambertian {
 }
 
 impl Material for Lambertian {
-    fn scatter(&self, _ray: &Ray, inter: &Intersection) -> Option<(Color, Ray)> {
+    fn scatter(&self, _ray: &Ray, inter: &Intersection) -> Option<ScatterType> {
         let texture = self.texture.deref();
         let normal = texture.adjusted_normal(inter.uv, inter.normal);
-        let mut scatter_dir = inter.point + normal + random_sphere_distribution().normalize();
 
-        if scatter_dir.near_zero() {
-            scatter_dir = normal;
-        }
-
-        Some((
-            texture.get_color_uv(inter.uv, inter.point),
-            Ray::new(inter.point, scatter_dir - inter.point),
-        ))
-    }
-
-    fn emitted(&self, _uv: (f32, f32), _point: Vec3) -> Color {
-        BLACK
+        Some(ScatterType::Scatter {
+            pdf: PDF::cosine(normal),
+            attenuation: texture.get_color_uv(inter.uv, inter.point),
+        })
     }
 
     fn albedo(&self, uv: (f32, f32), point: Vec3) -> Color {
         self.texture.deref().get_color_uv(uv, point)
+    }
+
+    fn scattering_pdf(&self, inter: &Intersection, scattered: &Ray) -> f32 {
+        inter.normal.dot(scattered.direction.normalize()).max(0.0) / std::f32::consts::PI
     }
 }

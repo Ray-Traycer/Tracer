@@ -4,12 +4,11 @@ use crate::{
     utils::{Color, RenderedImage},
 };
 
-use super::camera::Camera;
-
-pub type WorldObjects = Vec<ObjectType>;
+use super::{camera::Camera, WorldLights, WorldObjects};
 
 pub struct World {
     pub objects: WorldObjects,
+    pub lights: WorldLights,
     pub background: Color,
     pub width: u32,
     pub samples_per_pixel: u32,
@@ -21,6 +20,7 @@ impl World {
     pub fn new(skybox: PixelMap) -> Self {
         World {
             objects: vec![],
+            lights: vec![],
             background: Color::new(0.3, 0.3, 0.35),
             width: 800,
             samples_per_pixel: 128,
@@ -47,6 +47,11 @@ impl World {
 
     pub fn add(&mut self, object: ObjectType) {
         self.objects.push(object);
+    }
+
+    pub fn add_light(&mut self, object: ObjectType) {
+        self.objects.push(object.clone());
+        self.lights.push(object);
     }
 
     pub fn render(mut self, camera: Camera) -> RenderedImage {

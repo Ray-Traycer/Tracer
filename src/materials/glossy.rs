@@ -2,12 +2,12 @@ use glam::Vec3;
 
 use crate::{
     random::{random_distribution, random_sphere_distribution},
-    utils::{Color, Vec3Extension, BLACK},
+    utils::{sampling::PDF, Color},
     world::physics::{Intersection, Ray},
 };
 
 use super::{
-    material::{Material, MaterialType},
+    material::{Material, MaterialType, ScatterType},
     metal::Metal,
     texture::Texture,
     PtrExtension, TexturePtr,
@@ -31,36 +31,28 @@ impl Glossy {
 }
 
 impl Material for Glossy {
-    fn scatter(&self, ray: &Ray, inter: &Intersection) -> Option<(Color, Ray)> {
+    fn scatter(&self, ray: &Ray, inter: &Intersection) -> Option<ScatterType> {
         let texture = self.texture.deref();
         let uv = inter.uv;
         let normal = texture.adjusted_normal(uv, inter.normal);
-
-        let mut scatter_dir = inter.point + normal + random_sphere_distribution().normalize();
         let unit_direction = ray.direction.normalize();
-
         let color = texture.get_color_uv(uv, inter.point);
 
         if random_distribution() < self.sheen {
             let reflected = Metal::reflect(unit_direction, normal);
-            Some((
-                color,
-                Ray::new(
+            Some(ScatterType::Specular {
+                specular: Ray::new(
                     inter.point,
                     reflected + self.roughness * random_sphere_distribution().normalize(),
                 ),
-            ))
+                attenuation: color,
+            })
         } else {
-            if scatter_dir.near_zero() {
-                scatter_dir = normal;
-            }
-
-            Some((color, Ray::new(inter.point, scatter_dir - inter.point)))
+            Some(ScatterType::Scatter {
+                pdf: PDF::cosine(normal),
+                attenuation: color,
+            })
         }
-    }
-
-    fn emitted(&self, _uv: (f32, f32), _point: Vec3) -> Color {
-        BLACK
     }
 
     fn albedo(&self, uv: (f32, f32), point: Vec3) -> Color {
