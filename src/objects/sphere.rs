@@ -1,14 +1,19 @@
 use crate::{
     materials::material::MaterialType,
-    utils::aabb::Aabb,
+    utils::{
+        aabb::Aabb,
+        sampling::{PdfReady, ONB, UVW},
+    },
     world::physics::{Intersection, Ray},
 };
 
 use glam::Vec3;
+use rand::Rng;
 use std::f32::consts::PI;
 
 use super::object::{Bounded, Geometry, ObjectType};
 
+#[derive(Clone)]
 pub struct Sphere {
     pub material: MaterialType,
     pub center: Vec3,
@@ -37,7 +42,7 @@ impl Bounded for Sphere {
 }
 
 impl Geometry for Sphere {
-    fn intersect(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<Intersection> {
+    fn intersects(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<Intersection> {
         let oc = ray.origin - self.center;
         let a = ray.direction.length_squared();
 
@@ -84,4 +89,34 @@ impl Geometry for Sphere {
         let theta = (-outward_normal.y).acos();
         (phi / (2.0 * PI), theta / PI)
     }
+}
+
+impl PdfReady for Sphere {
+    fn pdf_value(&self, o: Vec3, v: Vec3) -> f32 {
+        if let Some(_) = self.intersects(&Ray::new(o, v), 0.001, f32::MAX) {
+            let cos_theta_max =
+                (1.0 - self.radius.powi(2) / (self.center - o).length_squared()).sqrt();
+            let solid_angle = 2.0 * PI * (1.0 - cos_theta_max);
+            1.0 / solid_angle
+        } else {
+            0.0
+        }
+    }
+
+    fn random(&self, o: Vec3) -> Vec3 {
+        let direction = self.center - o;
+        let uvw = ONB::build_from_w(direction);
+        uvw.local(random_to_sphere(self.radius, direction.length_squared()))
+    }
+}
+
+fn random_to_sphere(radius: f32, distance_squared: f32) -> Vec3 {
+    let mut rng = rand::thread_rng();
+    let r1 = rng.gen::<f32>();
+    let r2 = rng.gen::<f32>();
+    let z = 1.0 + r2 * ((1.0 - radius.powi(2) / distance_squared).sqrt() - 1.0);
+    let phi = 2.0 * PI * r1;
+    let x = phi.cos() * (1.0 - z.powi(2)).sqrt();
+    let y = phi.sin() * (1.0 - z.powi(2)).sqrt();
+    Vec3::new(x, y, z)
 }

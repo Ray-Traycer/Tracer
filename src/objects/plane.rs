@@ -1,11 +1,14 @@
 use crate::{
     materials::material::MaterialType,
-    utils::aabb::Aabb,
+    utils::{aabb::Aabb, sampling::PdfReady},
     world::physics::{Intersection, Ray},
 };
 
 use super::object::{Bounded, Geometry, ObjectType};
 use glam::Vec3;
+use rand::Rng;
+
+#[derive(Clone)]
 
 pub enum PlaneType {
     YZ,
@@ -13,6 +16,7 @@ pub enum PlaneType {
     XY,
 }
 
+#[derive(Clone)]
 pub struct Plane {
     plane_type: PlaneType,
     a0: f32,
@@ -54,7 +58,7 @@ impl Plane {
 }
 
 impl Geometry for Plane {
-    fn intersect(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<Intersection> {
+    fn intersects(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<Intersection> {
         let (k_axis, a_axis, b_axis) = Plane::get_axis(&self.plane_type);
         let t = (self.k - ray.origin[k_axis]) / ray.direction[k_axis];
 
@@ -125,5 +129,32 @@ impl Bounded for Plane {
                 max: Vec3::new(self.a1, self.b1, self.k + 1e-4),
             }),
         }
+    }
+}
+
+impl PdfReady for Plane {
+    fn pdf_value(&self, o: Vec3, v: Vec3) -> f32 {
+        if let Some(hit) = self.intersects(&Ray::new(o, v), 0.001, f32::MAX) {
+            let area = (self.a1 - self.a0) * (self.b1 - self.b0);
+            let distance_squared = hit.distance.powi(2) * v.length_squared();
+            let cosine = v.dot(hit.normal).abs() / v.length();
+            if cosine != 0.0 {
+                distance_squared / (cosine * area)
+            } else {
+                0.0
+            }
+        } else {
+            0.0
+        }
+    }
+
+    fn random(&self, o: Vec3) -> Vec3 {
+        let mut rng = rand::thread_rng();
+        let (k_axis, a_axis, b_axis) = Plane::get_axis(&self.plane_type);
+        let mut random_point = Vec3::ZERO;
+        random_point[a_axis] = rng.gen_range(self.a0..self.a1);
+        random_point[b_axis] = rng.gen_range(self.b0..self.b1);
+        random_point[k_axis] = self.k;
+        random_point - o
     }
 }

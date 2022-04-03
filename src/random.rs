@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use glam::Vec3;
 use rand::Rng;
 
@@ -18,17 +20,26 @@ pub fn random_distribution() -> f32 {
 }
 
 pub fn random_sphere_distribution() -> Vec3 {
-    loop {
-        let p = Vec3::new(
-            random_float(-1.0, 1.0),
-            random_float(-1.0, 1.0),
-            random_float(-1.0, 1.0),
-        );
-        if p.length_squared() >= 1.0 {
-            continue;
-        }
-        return p;
-    }
+    let r1 = random_distribution();
+    let r2 = random_distribution();
+
+    return Vec3::new(
+        (2.0 * PI * r1).cos() * 2.0 * (r2 * (1.0 - r2)).sqrt(),
+        (2.0 * PI * r1).sin() * 2.0 * (r2 * (1.0 - r2)).sqrt(),
+        1.0 - (2.0 * r2),
+    );
+
+    // loop {
+    //     let p = Vec3::new(
+    //         random_float(-1.0, 1.0),
+    //         random_float(-1.0, 1.0),
+    //         random_float(-1.0, 1.0),
+    //     );
+    //     if p.length_squared() >= 1.0 {
+    //         continue;
+    //     }
+    //     return p;
+    // }
 }
 
 pub fn random_hemisphere_distribution(normal: Vec3) -> Vec3 {

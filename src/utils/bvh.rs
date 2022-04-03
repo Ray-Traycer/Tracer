@@ -1,5 +1,6 @@
 use rand::Rng;
 use std::cmp::Ordering;
+
 use std::fmt;
 
 use crate::objects::object::{Bounded, Geometry, ObjectType};
@@ -20,18 +21,15 @@ struct BvhNode<'a> {
     object: Option<&'a ObjectType>,
 }
 
-#[derive(Copy, Clone, Debug)]
-pub struct NodeId {
-    index: usize,
-}
+type NodeId = usize;
 
 impl<'a> BvhTree<'a> {
-    fn intersects(&self, id: NodeId, r: &Ray, tmin: f32, tmax: f32) -> Option<Intersection> {
-        let node = &self.nodes[id.index];
+    pub fn intersects_id(&self, id: NodeId, r: &Ray, tmin: f32, tmax: f32) -> Option<Intersection> {
+        let node = &self.nodes[id];
 
         if node.aabb.is_none() || node.aabb.is_some() && node.aabb.unwrap().hit(r, tmin, tmax) {
             match node.object {
-                Some(ref object) => return object.intersect(r, tmin, tmax),
+                Some(ref object) => return object.intersects(r, tmin, tmax),
                 None => {}
             }
 
@@ -39,11 +37,11 @@ impl<'a> BvhTree<'a> {
             let mut hit_right: Option<Intersection> = None;
 
             if let Some(ref left_index) = node.left {
-                hit_left = self.intersects(*left_index, r, tmin, tmax);
+                hit_left = self.intersects_id(*left_index, r, tmin, tmax);
             }
 
             if let Some(ref right_index) = node.right {
-                hit_right = self.intersects(*right_index, r, tmin, tmax);
+                hit_right = self.intersects_id(*right_index, r, tmin, tmax);
             }
 
             match hit_left {
@@ -71,7 +69,7 @@ impl<'a> BvhTree<'a> {
     pub fn new(l: &'a mut Vec<ObjectType>) -> BvhTree<'a> {
         let mut tree = BvhTree {
             nodes: Vec::new(),
-            root: NodeId { index: 0 },
+            root: 0,
         };
         tree.root = tree.build(l);
 
@@ -104,8 +102,8 @@ impl<'a> BvhTree<'a> {
             right = self.build(right_hitables);
         }
 
-        if let Some(left_box) = self.nodes[left.index].aabb {
-            if let Some(right_box) = self.nodes[right.index].aabb {
+        if let Some(left_box) = self.nodes[left].aabb {
+            if let Some(right_box) = self.nodes[right].aabb {
                 return self.new_node(
                     surrounding_box(&left_box, &right_box),
                     Some(left),
@@ -127,7 +125,7 @@ impl<'a> BvhTree<'a> {
             object: Some(object),
         });
 
-        return NodeId { index: next_index };
+        return next_index;
     }
 
     fn new_node(&mut self, aabb: Aabb, left: Option<NodeId>, right: Option<NodeId>) -> NodeId {
@@ -140,11 +138,11 @@ impl<'a> BvhTree<'a> {
             object: None,
         });
 
-        return NodeId { index: next_index };
+        return next_index;
     }
 
     fn number_hittables(&self, id: NodeId) -> usize {
-        let node = &self.nodes[id.index];
+        let node = &self.nodes[id];
         let local_hitable = if node.object.is_some() { 1 } else { 0 };
         let count_left = if let Some(left_index) = node.left {
             self.number_hittables(left_index)
@@ -161,11 +159,11 @@ impl<'a> BvhTree<'a> {
     }
 
     fn bounding_box(&self) -> Option<Aabb> {
-        self.nodes[self.root.index].aabb
+        self.nodes[self.root].aabb
     }
 
     pub fn hit(&self, r: &Ray, tmin: f32, tmax: f32) -> Option<Intersection> {
-        self.intersects(self.root, r, tmin, tmax)
+        self.intersects_id(self.root, r, tmin, tmax)
     }
 }
 
