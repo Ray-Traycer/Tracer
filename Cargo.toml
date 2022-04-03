@@ -12,3 +12,8 @@ glam="0.20.3"
 rand="*"
 indicatif="0.16.2"
 rayon="*"
+
+[profile.release]
+opt-level = 3
+panic = "abort"
+# lto = true

@@ -122,7 +122,7 @@ impl Camera {
     }
 
     pub fn render_threaded(&self, world: &mut World) -> RenderedImage {
-        let background = world.background;
+        // let background = world.background;
         let width = world.width;
         let samples_per_pixel = world.samples_per_pixel;
         let max_depth = world.max_depth;
@@ -153,7 +153,7 @@ impl Camera {
 
                 let r = self.get_ray(u, v);
 
-                final_color = final_color + r.color(&world_objects, background, max_depth);
+                final_color = final_color + r.color(&world_objects, &world.skybox, max_depth);
             });
             slab.copy_from_slice(
                 &(final_color / samples_per_pixel as f32)

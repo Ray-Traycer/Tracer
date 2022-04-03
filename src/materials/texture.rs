@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use arrayvec::ArrayVec;
 use glam::Vec3;
 
@@ -189,6 +191,25 @@ impl PixelMap {
         }
     }
 
+    pub fn from_image_hdr(image: DynamicImage) -> Self {
+        Self {
+            pixels: image
+                .as_rgb32f()
+                .unwrap()
+                .pixels()
+                .map(|pixel| Vec3::new(pixel[0], pixel[1], pixel[2]))
+                .collect(),
+            width: image.width(),
+            height: image.height(),
+        }
+    }
+
+    fn surface_uv(&self, point: Vec3) -> (f32, f32) {
+        let phi = (-point.z).atan2(point.x) + PI;
+        let theta = (-point.y).acos();
+        (phi / (2.0 * PI), theta / PI)
+    }
+
     fn adjusted_normal(&self, uv: (f32, f32), normal: Vec3) -> Vec3 {
         normal + self.get_normal(clamp_uv(uv, self.width, self.height))
     }
@@ -199,5 +220,13 @@ impl PixelMap {
 
     fn get_pixel(&self, pos: (u32, u32)) -> Color {
         self.pixels[(pos.0 + self.width * pos.1) as usize]
+    }
+
+    pub fn get_pixel_uv(&self, uv: (f32, f32)) -> Color {
+        self.get_pixel(clamp_uv(uv, self.width, self.height))
+    }
+
+    pub fn dir_color(&self, dir: Vec3) -> Color {
+        self.get_pixel_uv(self.surface_uv(dir.normalize()))
     }
 }

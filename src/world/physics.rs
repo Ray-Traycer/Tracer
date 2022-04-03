@@ -1,6 +1,9 @@
 use super::world::WorldObjects;
 use crate::{
-    materials::material::{Material, MaterialType},
+    materials::{
+        material::{Material, MaterialType},
+        texture::PixelMap,
+    },
     objects::object::Geometry,
     utils::{bvh::BvhTree, Color, BLACK},
 };
@@ -96,7 +99,7 @@ impl Ray {
         }
     }
 
-    pub fn color(&self, world_objects: &BvhTree, background_color: Color, depth: u32) -> Color {
+    pub fn color(&self, world_objects: &BvhTree, skybox: &PixelMap, depth: u32) -> Color {
         if depth <= 0 {
             return BLACK;
         }
@@ -107,14 +110,12 @@ impl Ray {
                 let emitted = material.emitted(intersection.uv, intersection.point);
                 return match material.scatter(self, &intersection) {
                     Some((attenuation, scattered)) => {
-                        emitted
-                            + attenuation
-                                * scattered.color(world_objects, background_color, depth - 1)
+                        emitted + attenuation * scattered.color(world_objects, skybox, depth - 1)
                     }
                     None => emitted,
                 };
             }
-            None => background_color,
+            None => skybox.dir_color(self.direction),
         }
     }
 }

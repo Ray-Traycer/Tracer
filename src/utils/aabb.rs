@@ -11,11 +11,11 @@ impl Aabb {
         for a in 0..3 {
             let mint = (self.min[a] - r.origin[a]) / r.direction[a];
             let maxt = (self.max[a] - r.origin[a]) / r.direction[a];
-            let t0 = ffmin(mint, maxt);
-            let t1 = ffmax(mint, maxt);
+            let t0 = mint.min(maxt);
+            let t1 = mint.max(maxt);
 
-            tmin = ffmax(t0, tmin);
-            tmax = ffmin(t1, tmax);
+            tmin = t0.max(tmin);
+            tmax = t1.min(tmax);
 
             if tmax <= tmin {
                 return false;
@@ -38,20 +38,4 @@ pub fn surrounding_box(box_0: &Aabb, box_1: &Aabb) -> Aabb {
         (box_0.max.z).max(box_1.max.z),
     );
     Aabb { min, max }
-}
-
-pub fn ffmax(a: f32, b: f32) -> f32 {
-    if a > b {
-        a
-    } else {
-        b
-    }
-}
-
-pub fn ffmin(a: f32, b: f32) -> f32 {
-    if a < b {
-        a
-    } else {
-        b
-    }
 }

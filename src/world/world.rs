@@ -1,4 +1,5 @@
 use crate::{
+    materials::texture::PixelMap,
     objects::object::ObjectType,
     utils::{Color, RenderedImage},
 };
@@ -13,16 +14,18 @@ pub struct World {
     pub width: u32,
     pub samples_per_pixel: u32,
     pub max_depth: u32,
+    pub skybox: PixelMap,
 }
 
 impl World {
-    pub fn new() -> Self {
+    pub fn new(skybox: PixelMap) -> Self {
         World {
             objects: vec![],
             background: Color::new(0.3, 0.3, 0.35),
             width: 800,
             samples_per_pixel: 128,
             max_depth: 50,
+            skybox,
         }
     }
     pub fn background(mut self, color: Color) -> Self {
