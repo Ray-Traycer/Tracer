@@ -105,7 +105,7 @@ impl Ray {
                     None => emitted,
                 }
             }
-            None => BLACK, //skybox.dir_color(self.direction),
+            None => skybox.dir_color(self.direction),
         }
     }
 }

@@ -174,6 +174,14 @@ pub struct PixelMap {
 }
 
 impl PixelMap {
+    pub fn from_color(color: Color) -> Self {
+        Self {
+            pixels: vec![color],
+            width: 0,
+            height: 0,
+        }
+    }
+
     pub fn from_image(image: DynamicImage) -> Self {
         Self {
             pixels: image
@@ -227,6 +235,10 @@ impl PixelMap {
     }
 
     pub fn dir_color(&self, dir: Vec3) -> Color {
+        if self.width == 0 || self.height == 0 {
+            return self.pixels[0];
+        }
+
         self.get_pixel_uv(self.surface_uv(dir.normalize()))
     }
 }

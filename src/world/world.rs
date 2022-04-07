@@ -1,6 +1,13 @@
+use std::path::Path;
+
+use glam::Vec3;
+
 use crate::{
-    materials::texture::PixelMap,
-    objects::object::ObjectType,
+    materials::{material::MaterialType, texture::PixelMap},
+    objects::{
+        obj::{load_obj, load_obj_spec},
+        object::ObjectType,
+    },
     utils::{Color, RenderedImage},
 };
 
@@ -47,6 +54,12 @@ impl World {
 
     pub fn add(&mut self, object: ObjectType) {
         self.objects.push(object);
+    }
+
+    pub fn add_object(&mut self, path: &Path, origin: Vec3, scale: f32, material: MaterialType) {
+        load_obj(path, origin, scale, material)
+            .into_iter()
+            .for_each(|tri| self.add(tri));
     }
 
     pub fn add_light(&mut self, object: ObjectType) {

@@ -15,10 +15,10 @@ use super::object::{Bounded, Geometry, ObjectType};
 
 #[derive(Clone)]
 pub struct Sphere {
-    pub material: MaterialType,
-    pub center: Vec3,
-    pub radius: f32,
-    pub node_index: usize,
+    material: MaterialType,
+    center: Vec3,
+    radius: f32,
+    node_index: usize,
 }
 
 impl Sphere {
