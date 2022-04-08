@@ -7,6 +7,7 @@ use crate::{
     objects::{
         obj::{load_obj, load_obj_spec},
         object::ObjectType,
+        rotated::{Axis, Rotated},
     },
     utils::{Color, RenderedImage},
 };
@@ -56,10 +57,18 @@ impl World {
         self.objects.push(object);
     }
 
-    pub fn add_object(&mut self, path: &Path, origin: Vec3, scale: f32, material: MaterialType) {
+    pub fn add_object(
+        &mut self,
+        path: &Path,
+        origin: Vec3,
+        scale: f32,
+        axis: Axis,
+        angle: f32,
+        material: MaterialType,
+    ) {
         load_obj(path, origin, scale, material)
             .into_iter()
-            .for_each(|tri| self.add(tri));
+            .for_each(|tri| self.objects.push(Rotated::new(axis, tri, angle)));
     }
 
     pub fn add_light(&mut self, object: ObjectType) {

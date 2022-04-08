@@ -13,6 +13,7 @@ use materials::{
 };
 use objects::{
     plane::{Plane, PlaneType},
+    rotated::Axis,
     sphere::Sphere,
 };
 use random::random_distribution;
@@ -60,24 +61,38 @@ fn main() {
         Path::new("./objs/dragon.obj"),
         vec3(0.0, 0.0, -1.52),
         0.3,
-        Lambertian::new(SolidColor::new(
-            color(183.0 / 255.0, 202.0 / 255.0, 121.0 / 255.0),
-            None,
-        )),
+        Axis::X,
+        -90.0,
+        // Metal::new(
+        //     SolidColor::new(color(183.0 / 255.0, 202.0 / 255.0, 121.0 / 255.0), None),
+        //     0.8,
+        // ),
+        // Glossy::new(
+        //     SolidColor::new(color(183.0 / 255.0, 202.0 / 255.0, 121.0 / 255.0), None),
+        //     0.2,
+        //     0.8,
+        // ),
+        Dielectric::new(1.333),
     );
 
     world.add(Plane::new(
         PlaneType::ZX,
-        -20.0,
-        20.0,
-        -20.0,
-        20.0,
+        -25.0,
+        25.0,
+        -25.0,
+        25.0,
         0.0,
         Lambertian::new(SolidColor::new(
             color(216.0 / 255.0, 202.0 / 255.0, 168.0 / 255.0),
             None,
         )),
     ));
+
+    // world.add(Sphere::new(
+    //     vec3(-1.7, 3.3, 0.0),
+    //     0.14,
+    //     EmissiveDiffuse::new(SolidColor::new(color(8.0, 2.8, 0.04), None)),
+    // ))
 
     world.add_light(Sphere::new(
         vec3(0.0, 10.0, 0.0),
@@ -87,14 +102,18 @@ fn main() {
 
     let camera = Camera::new(
         vec3(-2.8, 7.0, 9.0),
-        vec3(-0.5, 1.5, 0.0),
+        vec3(-0.5, 2.0, 0.0),
         vec3(0.0, 1.0, 0.0),
         30.0,
-        16.0 / 9.0,
+        4.0 / 3.0,
         0.0,
         100.0,
     );
 
-    let image = world.samples_per_pixel(10).max_depth(50).render(camera);
+    let image = world
+        .samples_per_pixel(128)
+        .max_depth(50)
+        .width(800)
+        .render(camera);
     image.save("renders/test.png").unwrap();
 }

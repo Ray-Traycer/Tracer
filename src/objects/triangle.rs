@@ -94,7 +94,7 @@ impl Geometry for Triangle {
     }
 
     fn outward_normal(&self, p: Vec3) -> Vec3 {
-        p
+        self.normal
     }
 
     fn surface_uv(&self, _outward_normal: Vec3) -> (f32, f32) {
