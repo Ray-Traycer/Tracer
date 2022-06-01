@@ -1,9 +1,11 @@
+use std::f32::consts::PI;
+
 use arrayvec::ArrayVec;
 
 use glam::Vec3;
 use rand::Rng;
 
-use crate::world::WorldLights;
+use crate::{materials::texture::PixelMap, world::WorldLights};
 
 pub type ONB = ArrayVec<Vec3, 3>;
 
@@ -69,7 +71,10 @@ pub enum PDF<'a> {
     Mixture {
         p: &'a PDF<'a>,
         q: &'a PDF<'a>,
-    },
+    }, // Image {
+       //     map: &'a PixelMap,
+       //     pUDist: Vec<f32>,
+       // }
 }
 
 impl<'a> PDF<'a> {
@@ -90,6 +95,35 @@ impl<'a> PDF<'a> {
         PDF::Mixture { p, q }
     }
 
+    // #[inline(always)]
+    // // function generates a PDF from an image
+    // pub fn image(map: &'a PixelMap) -> Self {
+    //     // generate a marginal cdf
+    //     let mut pUDist = Vec::with_capacity(map.width as usize);
+    //     let mut pBuffer = Vec::with_capacity(map.width as usize);
+    //     let mut m_pData = Vec::with_capacity(map.width as usize * map.height as usize);
+
+    //     let mut sum = 0.0;
+    //     for y in 0..map.height {
+    //         for x in 0..map.width {
+    //             let pixel = map.get_pixel((x, y));
+    //             let luminance = 0.2126 * pixel.x + 0.7152 * pixel.y + 0.0722 * pixel.z;
+    //             sum += luminance;
+    //             m_pData.push(luminance);
+    //         }
+    //     }
+
+    //     for i in 0..map.width as usize {
+    //         pBuffer.push(m_pData[i]);
+    //     }
+
+    //     for i in 0..map.width as usize {
+    //         pUDist.push(pBuffer[i] / sum);
+    //     }
+
+    //     PDF::Image { map, pUDist }
+    // }
+
     pub fn value(&self, direction: Vec3) -> f32 {
         match self {
             PDF::Cosine { uvw } => {
@@ -101,7 +135,14 @@ impl<'a> PDF<'a> {
                 }
             }
             PDF::Lights { origin, objects } => objects.pdf_value(*origin, direction),
-            PDF::Mixture { p, q } => 0.5 * p.value(direction) + 0.5 * q.value(direction),
+            PDF::Mixture { p, q } => 0.5 * p.value(direction) + 0.5 * q.value(direction), // PDF::Image { map, pUDist } => {
+                                                                                          //     let (u, v) = map.surface_uv(direction.normalize());
+                                                                                          //     let uIndex = (u * (map.width - 1) as f32) as usize;
+                                                                                          //     let vIndex = (v * (map.height - 1) as f32) as usize;
+                                                                                          //     let uDist = pUDist[uIndex];
+                                                                                          //     let vDist = pUDist[vIndex];
+                                                                                          //     uDist * vDist
+                                                                                          // }
         }
     }
 
@@ -116,7 +157,27 @@ impl<'a> PDF<'a> {
                 } else {
                     q.generate()
                 }
-            }
+            } // PDF::Image { map, pUDist } => {
+              //     let mut rng = rand::thread_rng();
+              //     let u = rng.gen_range(0.0..1.0);
+              //     let v = rng.gen_range(0.0..1.0);
+              //     let uIndex = (u * (map.width - 1) as f32) as usize;
+              //     let vIndex = (v * (map.height - 1) as f32) as usize;
+              //     let uDist = pUDist[uIndex];
+              //     let vDist = pUDist[vIndex];
+              //     let u = u * (map.width - 1) as f32;
+              //     let v = v * (map.height - 1) as f32;
+              //     let u = u / (map.width - 1) as f32;
+              //     let v = v / (map.height - 1) as f32;
+              //     let u = u * uDist;
+              //     let v = v * vDist;
+              //     let u = u * (map.width - 1) as f32;
+              //     let v = v * (map.height - 1) as f32;
+              //     let u = u as usize;
+              //     let v = v as usize;
+              //     let pixel = map.get_pixel((u as u32, v as u32));
+              //     Vec3::new(pixel.x, pixel.y, pixel.z)
+              // }
         }
     }
 }
@@ -130,4 +191,11 @@ fn random_cosine_direction() -> Vec3 {
     let x = phi.cos() * 2.0 * r2.sqrt();
     let y = phi.sin() * 2.0 * r2.sqrt();
     Vec3::new(x, y, z)
+}
+
+fn from_spherical_uv(u: f32, v: f32) -> Vec3 {
+    let phi = u * 2.0 * std::f32::consts::PI;
+    let theta = (v * 0.5 + 0.5) * std::f32::consts::PI;
+    let sin_theta = theta.sin();
+    Vec3::new(sin_theta * phi.cos(), sin_theta * phi.sin(), theta.cos())
 }

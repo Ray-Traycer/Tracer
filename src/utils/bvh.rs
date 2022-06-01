@@ -24,41 +24,43 @@ struct BvhNode<'a> {
 type NodeId = usize;
 
 impl<'a> BvhTree<'a> {
-    pub fn intersects_id(&self, id: NodeId, r: &Ray, tmin: f32, tmax: f32) -> Option<Intersection> {
+    pub fn intersects_id(
+        &self,
+        id: NodeId,
+        ray: &Ray,
+        t_min: f32,
+        t_max: f32,
+    ) -> Option<Intersection> {
         let node = &self.nodes[id];
+        if let Some(aabb) = node.aabb {
+            if aabb.hit(ray, t_min, t_max) {
+                if let Some(obj) = node.object {
+                    return obj.intersects(ray, t_min, t_max);
+                }
 
-        if node.aabb.is_none() || node.aabb.is_some() && node.aabb.unwrap().hit(r, tmin, tmax) {
-            match node.object {
-                Some(ref object) => return object.intersects(r, tmin, tmax),
-                None => {}
-            }
+                let hit_left = match node.left {
+                    Some(id) => self.intersects_id(id, ray, t_min, t_max),
+                    None => None,
+                };
 
-            let mut hit_left: Option<Intersection> = None;
-            let mut hit_right: Option<Intersection> = None;
+                let hit_right = match node.right {
+                    Some(id) => self.intersects_id(id, ray, t_min, t_max),
+                    None => None,
+                };
 
-            if let Some(ref left_index) = node.left {
-                hit_left = self.intersects_id(*left_index, r, tmin, tmax);
-            }
-
-            if let Some(ref right_index) = node.right {
-                hit_right = self.intersects_id(*right_index, r, tmin, tmax);
-            }
-
-            match hit_left {
-                Some(left) => match hit_right {
-                    Some(right) => {
+                return match (hit_left, hit_right) {
+                    (None, None) => None,
+                    (None, hit) => hit,
+                    (hit, None) => hit,
+                    (Some(left), Some(right)) => {
                         if left.distance < right.distance {
-                            return Some(left);
+                            Some(left)
                         } else {
-                            return Some(right);
+                            Some(right)
                         }
                     }
-                    None => return Some(left),
-                },
-                None => {}
+                };
             }
-
-            return hit_right;
         }
 
         None

@@ -101,11 +101,35 @@ impl Ray {
                                     )
                                     / pdf_val;
                         }
+                        ScatterType::Glossy {
+                            pdf,
+                            attenuation,
+                            specular,
+                        } => {
+                            let geo_pdf = PDF::lights(light_objects, intersection.point);
+                            let pdf_func = PDF::mixture(&geo_pdf, &pdf);
+                            let scattered = Ray::new(intersection.point, pdf_func.generate());
+                            let pdf_val = pdf_func.value(scattered.direction);
+                            let scattering_pdf = intersection
+                                .material
+                                .scattering_pdf(&intersection, &scattered);
+                            return emitted
+                                + attenuation
+                                    * scattering_pdf
+                                    * scattered.color(
+                                        world_objects,
+                                        light_objects,
+                                        skybox,
+                                        depth - 1,
+                                    )
+                                    / pdf_val
+                                + specular.color(world_objects, light_objects, skybox, depth - 1);
+                        }
                     },
                     None => emitted,
                 }
             }
-            None => BLACK, //skybox.dir_color(self.direction),
+            None => skybox.dir_color(self.direction),
         }
     }
 }
