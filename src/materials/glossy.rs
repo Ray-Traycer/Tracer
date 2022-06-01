@@ -1,7 +1,7 @@
 use glam::Vec3;
 
 use crate::{
-    random::{random_distribution, random_sphere_distribution},
+    random::{random_distribution, random_in_unit_disk, random_sphere_distribution},
     utils::{sampling::PDF, Color},
     world::physics::{Intersection, Ray},
 };
@@ -33,26 +33,31 @@ impl Glossy {
 impl Material for Glossy {
     fn scatter(&self, ray: &Ray, inter: &Intersection) -> Option<ScatterType> {
         let texture = self.texture.deref();
-        let uv = inter.uv;
-        let normal = texture.adjusted_normal(uv, inter.normal);
-        let unit_direction = ray.direction.normalize();
-        let color = texture.get_color_uv(uv, inter.point);
+        let normal = texture.adjusted_normal(inter.uv, inter.normal);
 
-        if random_distribution() < self.sheen {
-            let reflected = Metal::reflect(unit_direction, normal);
-            Some(ScatterType::Specular {
-                specular: Ray::new(
-                    inter.point,
-                    reflected + self.roughness * random_sphere_distribution().normalize(),
-                ),
-                attenuation: color,
+        let reflected = Metal::reflect(ray.direction.normalize(), normal);
+        let uv = inter.uv;
+
+        if reflected.dot(normal) > 0.0 {
+            let reflected =
+                reflected + (1.0 - self.sheen) * random_sphere_distribution().normalize();
+            let scattered = Ray::new(
+                inter.point,
+                reflected + self.roughness * random_in_unit_disk(),
+            );
+
+            Some(ScatterType::Glossy {
+                specular: scattered,
+                pdf: PDF::cosine(normal),
+                attenuation: texture.get_color_uv(uv, inter.point),
             })
         } else {
-            Some(ScatterType::Scatter {
-                pdf: PDF::cosine(normal),
-                attenuation: color,
-            })
+            None
         }
+    }
+
+    fn scattering_pdf(&self, inter: &Intersection, scattered: &Ray) -> f32 {
+        inter.normal.dot(scattered.direction.normalize()).max(0.0) / std::f32::consts::PI
     }
 
     fn albedo(&self, uv: (f32, f32), point: Vec3) -> Color {

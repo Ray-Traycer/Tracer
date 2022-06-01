@@ -11,8 +11,19 @@ use super::{
 };
 
 pub enum ScatterType<'a> {
-    Specular { specular: Ray, attenuation: Vec3 },
-    Scatter { pdf: PDF<'a>, attenuation: Vec3 },
+    Specular {
+        specular: Ray,
+        attenuation: Vec3,
+    },
+    Scatter {
+        pdf: PDF<'a>,
+        attenuation: Vec3,
+    },
+    Glossy {
+        pdf: PDF<'a>,
+        attenuation: Vec3,
+        specular: Ray,
+    },
 }
 
 #[derive(Copy, Clone, Debug)]

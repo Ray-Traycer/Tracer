@@ -169,8 +169,8 @@ impl Texture for CheckerBoard {
 
 pub struct PixelMap {
     pixels: Vec<Color>,
-    width: u32,
-    height: u32,
+    pub width: u32,
+    pub height: u32,
 }
 
 impl PixelMap {
@@ -212,7 +212,7 @@ impl PixelMap {
         }
     }
 
-    fn surface_uv(&self, point: Vec3) -> (f32, f32) {
+    pub fn surface_uv(&self, point: Vec3) -> (f32, f32) {
         let phi = (-point.z).atan2(point.x) + PI;
         let theta = (-point.y).acos();
         (phi / (2.0 * PI), theta / PI)
@@ -226,7 +226,7 @@ impl PixelMap {
         self.pixels[(pos.0 + self.width * pos.1) as usize]
     }
 
-    fn get_pixel(&self, pos: (u32, u32)) -> Color {
+    pub fn get_pixel(&self, pos: (u32, u32)) -> Color {
         self.pixels[(pos.0 + self.width * pos.1) as usize]
     }
 

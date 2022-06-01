@@ -16,7 +16,7 @@ use objects::{
     rotated::Axis,
     sphere::Sphere,
 };
-use random::random_distribution;
+use random::{random_distribution, random_float};
 use utils::{Color, BLACK, WHITE};
 use world::{camera::Camera, world::World};
 
@@ -52,28 +52,28 @@ fn color(r: f32, g: f32, b: f32) -> Color {
 }
 
 fn main() {
-    // let mut world = World::new(PixelMap::from_image(load_image(
-    //     "christmas_photo_studio_02_4k.exr",
-    //     Rotate::None,
-    // )));
-    let mut world = World::new(PixelMap::from_color(color(0.0, 0.0, 0.0)));
-    world.add_object(
-        Path::new("./objs/dragon.obj"),
-        vec3(0.0, 0.0, -1.52),
-        0.3,
-        Axis::X,
-        -90.0,
-        // Metal::new(
-        //     SolidColor::new(color(183.0 / 255.0, 202.0 / 255.0, 121.0 / 255.0), None),
-        //     0.8,
-        // ),
-        // Glossy::new(
-        //     SolidColor::new(color(183.0 / 255.0, 202.0 / 255.0, 121.0 / 255.0), None),
-        //     0.2,
-        //     0.8,
-        // ),
-        Dielectric::new(1.333),
-    );
+    let mut world = World::new(PixelMap::from_image(load_image(
+        "./images/brick_factory_02_4k.exr",
+        Rotate::None,
+    )));
+    // let mut world = World::new(PixelMap::from_color(color(0.0, 0.0, 0.0)));
+    // world.add_object(
+    //     Path::new("./objs/dragon.obj"),
+    //     vec3(0.0, 0.0, -1.52),
+    //     0.3,
+    //     Axis::X,
+    //     -90.0,
+    //     // Metal::new(
+    //     //     SolidColor::new(color(183.0 / 255.0, 202.0 / 255.0, 121.0 / 255.0), None),
+    //     //     0.8,
+    //     // ),
+    //     Glossy::new(
+    //         SolidColor::new(color(183.0 / 255.0, 202.0 / 255.0, 121.0 / 255.0), None),
+    //         0.9,
+    //         0.2,
+    //     ),
+    //     // Dielectric::new(1.333),
+    // );
 
     world.add(Plane::new(
         PlaneType::ZX,
@@ -88,6 +88,27 @@ fn main() {
         )),
     ));
 
+    // glossy sphere in front of the camera
+    world.add(Sphere::new(
+        vec3(0.0, 1.0, -5.0),
+        1.0,
+        Glossy::new(SolidColor::new(color(1.0, 1.0, 1.0), None), 0.9, 0.2),
+    ));
+
+    // sphere near the other sphere
+    world.add(Sphere::new(
+        vec3(2.0, 1.0, -3.0),
+        1.0,
+        Lambertian::new(SolidColor::new(color(1.0, 0.0, 0.0), None)),
+    ));
+
+    // add metal sphere
+    // world.add(Sphere::new(
+    //     vec3(-2.0, 1.0, -3.0),
+    //     1.0,
+    //     Metal::new(SolidColor::new(color(0.0, 0.0, 1.0), None), 0.8),
+    // ));
+
     // world.add(Sphere::new(
     //     vec3(-1.7, 3.3, 0.0),
     //     0.14,
@@ -96,12 +117,24 @@ fn main() {
 
     world.add_light(Sphere::new(
         vec3(0.0, 10.0, 0.0),
-        4.0,
+        0.1,
         EmissiveDiffuse::new(SolidColor::new(color(5.0, 5.0, 5.0), None)),
     ));
 
+    // let camera = Camera::new(
+    //     vec3(-2.8, 7.0, 9.0),
+    //     vec3(-0.5, 2.0, 0.0),
+    //     vec3(0.0, 1.0, 0.0),
+    //     30.0,
+    //     4.0 / 3.0,
+    //     0.0,
+    //     100.0,
+    // );
+
+    // add 5 emmisive spheres floating in the scene
+
     let camera = Camera::new(
-        vec3(-2.8, 7.0, 9.0),
+        vec3(-2.8, 7.0, 20.0),
         vec3(-0.5, 2.0, 0.0),
         vec3(0.0, 1.0, 0.0),
         30.0,
@@ -113,7 +146,7 @@ fn main() {
     let image = world
         .samples_per_pixel(128)
         .max_depth(50)
-        .width(800)
+        .width(400)
         .render(camera);
     image.save("renders/test.png").unwrap();
 }

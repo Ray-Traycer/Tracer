@@ -11,7 +11,7 @@ use rayon::{
 use super::{physics::Ray, world::World};
 use crate::{
     random::{random_distribution, random_in_unit_disk},
-    utils::{bvh::BvhTree, RenderedImage, Vec3Extension, BLACK},
+    utils::{bvh::BvhTree, sampling::PDF, RenderedImage, Vec3Extension, BLACK},
 };
 use indicatif::ProgressStyle;
 
