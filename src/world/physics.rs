@@ -113,7 +113,7 @@ impl Ray {
                             let scattering_pdf = intersection
                                 .material
                                 .scattering_pdf(&intersection, &scattered);
-                            return emitted
+                            return (emitted
                                 + attenuation
                                     * scattering_pdf
                                     * scattered.color(
@@ -123,7 +123,8 @@ impl Ray {
                                         depth - 1,
                                     )
                                     / pdf_val
-                                + specular.color(world_objects, light_objects, skybox, depth - 1);
+                                + specular.color(world_objects, light_objects, skybox, 1))
+                                / 2.0;
                         }
                     },
                     None => emitted,

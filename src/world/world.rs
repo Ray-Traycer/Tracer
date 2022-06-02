@@ -57,7 +57,7 @@ impl World {
         self.objects.push(object);
     }
 
-    pub fn add_object(
+    pub fn add_object_rot(
         &mut self,
         path: &Path,
         origin: Vec3,
@@ -69,6 +69,12 @@ impl World {
         load_obj(path, origin, scale, material)
             .into_iter()
             .for_each(|tri| self.objects.push(Rotated::new(axis, tri, angle)));
+    }
+
+    pub fn add_object(&mut self, path: &Path, origin: Vec3, scale: f32, material: MaterialType) {
+        load_obj(path, origin, scale, material)
+            .into_iter()
+            .for_each(|tri| self.objects.push(tri));
     }
 
     pub fn add_light(&mut self, object: ObjectType) {
