@@ -6,15 +6,7 @@
 
 #### These renders were rendered at a low res and sample count to save time.
 
-#### Final renders won't have as much noise or artifacts.
-
-![](https://cdn.discordapp.com/attachments/830269354649452564/981226322972000326/unknown.png)
-
-##### Stanford Dragon Glass Material (871,414 Triangles)
-
-<hr>
-
-![](https://cdn.discordapp.com/attachments/830269354649452564/981268521776476230/image0.jpg)
+![](https://cdn.discordapp.com/attachments/792686378366009354/1082932270232510474/Screen_Shot_2022-06-01_at_5.01.16_PM.png)
 
 ##### Stanford Dragon Glossy Material (871,414 Triangles)
 
